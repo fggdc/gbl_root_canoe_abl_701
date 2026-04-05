@@ -111,6 +111,13 @@ INT16 Patched[] = {
     -1, -1, -1, -1, -1, -1, -1, -1
 };
 
+INT16 Original_warning[] = {
+    -1, 0x06, 0x80, 0x52,
+    -1, 0x00, 0x00, -1,
+    -1, 0x05, -1,-1
+};
+INT16 Patched_warning = 0x7F;
+
 INT32 patch_abl_bootstate(CHAR8* buffer, INT32 size,
                           INT8* lock_register_num, INT32* offset) {
     INT32 pattern_len = sizeof(Original) / sizeof(INT16);
@@ -132,6 +139,27 @@ INT32 patch_abl_bootstate(CHAR8* buffer, INT32 size,
             #endif
             patched_count++;
             i += pattern_len - 1;
+        }
+    }
+    return patched_count;
+}
+
+INT32 patch_warning(CHAR8* buffer, INT32 size, INT32* offset) {
+    INT32 pattern_len = sizeof(Original_warning) / sizeof(INT16);
+    INT32 patched_count = 0;
+    if (size < pattern_len) return 0;
+    for (INT32 i = 0; i <= size - pattern_len; ++i) {
+        BOOLEAN match = TRUE;
+        for (INT32 j = 0; j < pattern_len; ++j) {
+            if (Original_warning[j] != -1 && (UINT8)buffer[i + j] != (UINT8)Original_warning[j]) {
+                match = FALSE; break;
+            }
+        }
+        if (match) {
+            i -= 4;
+            *offset = i;
+            buffer[i] = Patched_warning;
+            return 1;
         }
     }
     return patched_count;
@@ -550,7 +578,7 @@ BOOLEAN PatchBuffer(CHAR8* data, INT32 size) {
     #endif
 
 
-    INT32 offset = -1;
+    INT32 offset = -1,offseta=-1;
     INT8 lock_register_num = -1;
     INT32 num_patches = patch_abl_bootstate(data, size, &lock_register_num, &offset);
     if (num_patches == 0) {
@@ -561,6 +589,15 @@ BOOLEAN PatchBuffer(CHAR8* data, INT32 size) {
     Print_patcher("Anchor offset : 0x%X\n", offset);
     Print_patcher("Lock register : W%d\n", (int)lock_register_num);
     Print_patcher("Boot patches: %d\n", num_patches);
+
+#ifndef AUTO_PATCH_ABL
+    num_patches = patch_warning(data, size, &offseta);
+    if (num_patches != 1) {
+        Print_patcher("Error: patch_warning\n");
+        return 0;
+    }
+    Print_patcher("patch_warning offset : 0x%X\n", offseta);
+#endif
 
     if (find_ldrB_instructio_reverse(data, size, offset, lock_register_num) != 0) {
         Print_patcher("Warning: Failed to patch LDRB->STRB chain for W%d\n",
