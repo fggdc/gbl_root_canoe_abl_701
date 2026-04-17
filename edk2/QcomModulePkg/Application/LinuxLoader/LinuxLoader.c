@@ -927,9 +927,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 
   //if (!IsFastbootGuard) {
       //wait for 5 sec for key press
-      Print(L"Press Volume Down key to enter Fastboot mode, waiting for 3 seconds into Normal mode...\n");
-      Print(L"Press Volume Up key to enter Normal mode\n");
-      INT8 KeyStatus = WaitForVolumeDownKey(3000);
+  /*    Print(L"Press Volume Down key to enter Fastboot mode, waiting for 3 seconds into Normal mode...\n");
+      Print(L"Press Volume Up key to enter Normal mode\n");*/
+      INT8 KeyStatus = WaitForVolumeDownKey(5000);
       if (KeyStatus == 1) {
           Print(L"Volume Down key detected, entering Fastboot mode...\n");
       }
